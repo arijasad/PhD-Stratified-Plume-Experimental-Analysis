@@ -52,13 +52,11 @@ Keep a missing crossing as `NaN`; do not replace it by zero or another frame's h
 
 With `outputFolder` set, `densityheight` writes `results.mat`, `profiles.csv`, `diagnostics.csv` and any displayed JPEG figures. The profile CSV contains `SummedImageIntensity`, `BackgroundCorrectedIntensity` and `NormalisedProfile`. Save the detector results separately with the chosen thresholds and run settings.
 
-### Other diagnostics and compatibility
+### Optional diagnostics
 
-`averagingColumns` retains its historical field name but selects columns to sum. Omit it to use the full crop. Without `imageFiles`, filenames matching `imagePattern` (default `*.png`) are sorted lexically; check the order against the timestamps.
+`averagingColumns` selects columns to sum. Omit it to use the full crop. Without `imageFiles`, filenames matching `imagePattern` (default `*.png`) are sorted lexically; check the order against the timestamps.
 
-`gradientDiagnostic` reports the position beside the largest adjacent greyscale difference. `legacyDiagnostic` retains the earlier sequence-scaled, time-ordered profile-value signal separately. Neither determines the thesis boundary. The default `fitTarget` is `'none'`; optional diagnostic fits remain available. `inspectionFrames`, `inspectionRows` and `inspectionColumns` select raw image sections.
-
-The September release `thesis-code-2026-09-27` used an earlier density-jump detector. Current code changes its signature from `(densityProfiles, z, ambientDensity, epsilon, H)` to `(normalisedProfiles, z, epsilon, H)` and replaces dimensional repeat thresholds with the dimensionless Table 2.4 central values and ranges. `densityheight` now returns summed rather than mean raw intensities, per-frame normalisation parameters, and greyscale profiles without inversion. The old release tag is retained for historical citations.
+`gradientDiagnostic` reports the position beside the largest adjacent greyscale difference. `legacyDiagnostic` returns a separate sequence-scaled, time-ordered profile-value signal. Neither determines the thesis boundary. The default `fitTarget` is `'none'`; optional diagnostic fits remain available. `inspectionFrames`, `inspectionRows` and `inspectionColumns` select raw image sections.
 
 Run the synthetic checks from the repository root:
 

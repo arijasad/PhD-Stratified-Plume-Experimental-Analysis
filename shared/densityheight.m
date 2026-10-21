@@ -17,7 +17,6 @@ function results = densityheight(config)
 %     cropRows          Rows retained from each image; default all rows.
 %     cropColumns       Columns retained from each image; default all columns.
 %     averagingColumns  Columns of the cropped image to sum; default all.
-%                       The historical field name is retained.
 %     rowCoordinates_m  Distance below the ceiling of each retained row, in
 %                       metres, in image order. If omitted, coordinates run
 %                       from 0 at the top to 1 at the bottom.
@@ -140,7 +139,7 @@ function results = densityheight(config)
         results.gradient.positions(gradientMagnitude == 0) = NaN;
     end
     if config.legacyDiagnostic
-        % Preserve the old sequence-scaled diagnostic separately from G_n.
+        % Compute the optional sequence-scaled diagnostic separately from G_n.
         % It is not used for the thesis greyscale boundary measurement.
         invertedProfiles = 1 - correctedProfiles;
         legacyMinimum = min(invertedProfiles(:));

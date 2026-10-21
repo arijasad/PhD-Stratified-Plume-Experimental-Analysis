@@ -30,7 +30,7 @@ function test_detect_stratification_depth
     assert(abs(low.h_m - 0.003) < 1e-15);
     assert(abs(high.h_m - 0.001) < 1e-15);
 
-    % Old dimensional inputs must fail rather than silently changing meaning.
+    % Reject dimensional density inputs to the greyscale detector.
     rejected = false;
     try
         detect_stratification_depth(1000-p, z, 1000, 0.125);

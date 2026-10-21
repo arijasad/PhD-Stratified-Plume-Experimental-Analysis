@@ -18,7 +18,7 @@ Source images, empirical calibrations and completed run configurations are not i
 
 The current code follows the greyscale method in thesis Section 2.5.4 and Table 2.4: first-frame background subtraction, normalisation within each frame, then the first row above a fixed dimensionless threshold when scanning upwards. Depth is measured below the ceiling. See [the shared-function guide](shared/README.md) for the complete workflow and sensitivity bounds.
 
-The existing `thesis-code-2026-09-27` release retains the earlier density-jump implementation. This correction is on the current branch; the historical release tag has not moved. Cite the version actually used.
+This is the master version of the software accompanying the thesis.
 
 ## Density-reconstruction method
 

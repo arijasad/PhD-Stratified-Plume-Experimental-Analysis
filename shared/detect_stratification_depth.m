@@ -16,8 +16,6 @@ function result = detect_stratification_depth(normalisedProfiles, rowCoordinates
 %   Use the actual tank height H (or H_r for a reduced-height configuration).
 %   Apply the detector separately at the two Table 2.4 threshold limits to
 %   obtain sensitivity bounds; those limits are not repeat-run thresholds.
-%
-%   This four-argument greyscale API replaces the September 2026 density API.
 
     narginchk(3, 4);
     if nargin < 4
