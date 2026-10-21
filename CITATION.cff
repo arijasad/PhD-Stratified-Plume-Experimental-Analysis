@@ -1,0 +1,60 @@
+cff-version: 1.2.0
+type: software
+message: Please cite this software using the archived version and DOI below.
+title: 'Stratified plume experimental analysis: Thesis code'
+authors:
+- family-names: Asad
+  given-names: Arij
+  affiliation: University of Bristol
+  orcid: https://orcid.org/0009-0008-2063-4154
+version: thesis-code-2026-10-21
+date-released: '2026-10-21'
+repository-code: https://github.com/arijasad/PhD-Stratified-Plume-Experimental-Analysis
+url: https://doi.org/10.5281/zenodo.23545912
+abstract: 'MATLAB software for analysing stratified-plume experiments from Arij Asad''s PhD research,
+  Mixing behaviour of plumes, at the University of Bristol. It provides greyscale stratification-depth
+  measurements, density reconstruction from fluorescence images, image-edge separation measurements and
+  refractive-index matching calculations.
+
+
+  The software follows the thesis greyscale method: first-frame background subtraction, normalisation
+  within each frame, and the first upward crossing of a fixed dimensionless threshold. Central thresholds
+  and sensitivity ranges reproduce Table 2.4. Supporting files include the thesis methods extract and
+  a practical usage guide.
+
+
+  Density reconstruction adapts Horne-Jones et al. (2026), Section 3.2, equations (16)-(18), doi:10.1007/s00348-026-04249-4.
+  This attribution applies to the density-reconstruction method. MATLAB and Image Processing Toolbox are
+  required. Experimental images, measured calibration inputs and completed run settings are supplied by
+  the user.
+
+
+  Daniel Glinnan assisted with the initial ray-forward calibration code, subsequently adapted and developed
+  by Arij Asad.
+
+
+  Source code is licensed under MIT; thesis figures and documentation are licensed under CC BY 4.0.'
+keywords:
+- buoyant plumes
+- PLIF
+- MATLAB
+- image analysis
+- stratification
+references:
+- type: article
+  title: Controlled accelerations for Rayleigh–Taylor instability
+  authors:
+  - family-names: Horne-Jones
+    given-names: J. T.
+  - family-names: Glinnan
+    given-names: D. J.
+  - family-names: Lawrie
+    given-names: A. G. W.
+  - family-names: Williams
+    given-names: R. J. R.
+  journal: Experiments in Fluids
+  volume: '67'
+  year: 2026
+  doi: 10.1007/s00348-026-04249-4
+doi: 10.5281/zenodo.23545912
+license: MIT
