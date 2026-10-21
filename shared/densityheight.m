@@ -1,22 +1,23 @@
 function results = densityheight(config)
 %DENSITYHEIGHT Read image sequences and compare their vertical profiles.
 %   RESULTS = DENSITYHEIGHT(CONFIG) uses the same reference subtraction and
-%   intensity normalisation as the thesis analysis script. The output is a
+%   per-frame intensity normalisation as thesis equation (2.19). The output is a
 %   normalised intensity profile, not a calibrated density in kg m^-3.
 %
 %   Required fields:
 %     imageFolder       Folder containing the images.
-%     referenceFrame    Index of the reference image in the retained sequence.
 %     timeSeconds       Time of each retained image, in seconds. Alternatively,
 %                       supply frameIntervalSeconds for equally spaced images.
 %
 %   Optional fields:
+%     referenceFrame    Must be 1 (the default), as specified in the thesis.
 %     imageFiles        Cell array of filenames in the required time order.
 %                       Otherwise, imagePattern matches files, sorted by name.
 %     imagePattern      Pattern used to find images; default '*.png'.
 %     cropRows          Rows retained from each image; default all rows.
 %     cropColumns       Columns retained from each image; default all columns.
-%     averagingColumns  Columns of the cropped image to average; default all.
+%     averagingColumns  Columns of the cropped image to sum; default all.
+%                       The historical field name is retained.
 %     rowCoordinates_m  Distance below the ceiling of each retained row, in
 %                       metres, in image order. If omitted, coordinates run
 %                       from 0 at the top to 1 at the bottom.
@@ -42,7 +43,6 @@ function results = densityheight(config)
         error('densityheight:Configuration', 'Supply one configuration structure.');
     end
     require_field(config, 'imageFolder');
-    require_field(config, 'referenceFrame');
     config = defaults(config);
     check_flag(config.gradientDiagnostic, 'gradientDiagnostic');
     check_flag(config.legacyDiagnostic, 'legacyDiagnostic');
@@ -63,6 +63,10 @@ function results = densityheight(config)
     referenceFrame = config.referenceFrame;
     validateattributes(referenceFrame, {'numeric'}, ...
         {'scalar', 'integer', '>=', 1, '<=', frameCount}, mfilename, 'referenceFrame');
+    if referenceFrame ~= 1
+        error('densityheight:ReferenceFrame', ...
+            'The thesis greyscale method subtracts the first retained frame; use referenceFrame = 1.');
+    end
 
     firstImage = read_image(imagePaths{1});
     imageSize = size(firstImage);
@@ -86,20 +90,23 @@ function results = densityheight(config)
             error('densityheight:ImageSize', 'Image dimensions differ: %s', imageFiles{frame});
         end
         imageData = imageData(cropRows, cropColumns);
-        rawProfiles(:, frame) = mean(imageData(:, averagingColumns), 2);
+        rawProfiles(:, frame) = sum(imageData(:, averagingColumns), 2);
     end
 
-    % Subtract the reference before applying the original intensity scaling.
+    % Equation (2.19): first-frame subtraction, then each frame's own range.
     referenceProfile = rawProfiles(:, referenceFrame);
-    invertedProfiles = 1 - bsxfun(@minus, rawProfiles, referenceProfile);
-    minimumValue = min(invertedProfiles(:));
-    normalisationScale = 1 - minimumValue;
-    if normalisationScale <= 0 || ~isfinite(normalisationScale)
-        error('densityheight:Normalisation', ...
-            ['The chosen reference gives no positive intensity difference. ' ...
-             'The original normalisation would divide by zero. Check the reference and crop.']);
-    end
-    normalisedProfiles = (invertedProfiles - minimumValue) / normalisationScale;
+    correctedProfiles = bsxfun(@minus, rawProfiles, referenceProfile);
+    minimumValue = min(correctedProfiles, [], 1);
+    normalisationScale = max(correctedProfiles, [], 1) - minimumValue;
+    % Ignore only floating-point subtraction roundoff, not experimental noise.
+    roundoffScale = max(abs(rawProfiles), [], 1) + max(abs(referenceProfile));
+    contrastRoundoff = 8 * eps(roundoffScale);
+    hasContrast = normalisationScale > contrastRoundoff;
+    normalisedProfiles = zeros(size(correctedProfiles));
+    normalisedProfiles(:, hasContrast) = bsxfun(@rdivide, ...
+        bsxfun(@minus, correctedProfiles(:, hasContrast), minimumValue(hasContrast)), ...
+        normalisationScale(hasContrast));
+    % Constant corrected profiles stay zero and have no detected boundary.
 
     results.config = config;
     results.imageFiles = imageFiles;
@@ -111,6 +118,9 @@ function results = densityheight(config)
     results.coordinateUnits = coordinateUnits;
     results.rawProfiles = rawProfiles;
     results.referenceProfile = referenceProfile;
+    results.correctedProfiles = correctedProfiles;
+    results.hasContrast = hasContrast;
+    results.contrastRoundoff = contrastRoundoff;
     results.normalisationMinimum = minimumValue;
     results.normalisationScale = normalisationScale;
     results.normalisedProfiles = normalisedProfiles;
@@ -119,24 +129,29 @@ function results = densityheight(config)
     results.powerFit = [];
     results.modelComparison = [];
 
-    if config.gradientDiagnostic || config.legacyDiagnostic
+    if config.gradientDiagnostic
         [selectedRows, profileValues, pairStartRows, gradientMagnitude] = ...
             gradient_samples(normalisedProfiles);
-        if config.gradientDiagnostic
-            results.gradient.pairStartRows = pairStartRows;
-            results.gradient.selectedRows = selectedRows;
-            results.gradient.profileValues = profileValues;
-            results.gradient.positions = reshape(rowCoordinates(selectedRows), 1, []);
-            results.gradient.maxAdjacentDifference = gradientMagnitude;
-            % A flat profile has no gradient position, including the reference.
-            results.gradient.positions(gradientMagnitude == 0) = NaN;
+        results.gradient.pairStartRows = pairStartRows;
+        results.gradient.selectedRows = selectedRows;
+        results.gradient.profileValues = profileValues;
+        results.gradient.positions = reshape(rowCoordinates(selectedRows), 1, []);
+        results.gradient.maxAdjacentDifference = gradientMagnitude;
+        results.gradient.positions(gradientMagnitude == 0) = NaN;
+    end
+    if config.legacyDiagnostic
+        % Preserve the old sequence-scaled diagnostic separately from G_n.
+        % It is not used for the thesis greyscale boundary measurement.
+        invertedProfiles = 1 - correctedProfiles;
+        legacyMinimum = min(invertedProfiles(:));
+        legacyScale = 1 - legacyMinimum;
+        legacyProfiles = ones(size(invertedProfiles));
+        if legacyScale > 0
+            legacyProfiles = (invertedProfiles - legacyMinimum) / legacyScale;
         end
-        if config.legacyDiagnostic
-            % Keep each profile value paired with its original frame and time.
-            % This remains a dimensionless signal, not a spatial height.
-            results.legacy.profileValues = profileValues;
-            results.legacy.timeOrderedSignal = 1 - profileValues;
-        end
+        [~, legacyValues] = gradient_samples(legacyProfiles);
+        results.legacy.profileValues = legacyValues;
+        results.legacy.timeOrderedSignal = 1 - legacyValues;
     end
 
     [fitValues, fitLabel] = fitting_signal(results, fitTarget);
@@ -225,7 +240,7 @@ function results = densityheight(config)
 end
 
 function config = defaults(config)
-    values = struct('imageFiles', {{}}, 'imagePattern', '*.png', ...
+    values = struct('referenceFrame', 1, 'imageFiles', {{}}, 'imagePattern', '*.png', ...
         'timeSeconds', [], 'frameIntervalSeconds', [], 'cropRows', [], ...
         'cropColumns', [], 'averagingColumns', [], 'rowCoordinates_m', [], ...
         'gradientDiagnostic', false, 'legacyDiagnostic', false, ...
@@ -539,9 +554,9 @@ function save_results(results, folder, figures, figureNames)
     times = results.timeSeconds(frameIndex(:));
     heights = results.rowCoordinates(rowIndex(:));
     profiles = table(frameIndex(:), rowIndex(:), times(:), heights(:), ...
-        results.rawProfiles(:), results.normalisedProfiles(:), ...
-        'VariableNames', {'Frame', 'Row', 'Time_s', 'RowCoordinate', ...
-        'MeanImageIntensity', 'NormalisedProfile'});
+        results.rawProfiles(:), results.correctedProfiles(:), results.normalisedProfiles(:), ...
+        'VariableNames', {'Frame', 'ImageRow', 'Time_s', 'RowCoordinate', ...
+        'SummedImageIntensity', 'BackgroundCorrectedIntensity', 'NormalisedProfile'});
     writetable(profiles, fullfile(folder, 'profiles.csv'));
     diagnostics = table((1:numel(results.timeSeconds)).', results.timeSeconds(:), ...
         'VariableNames', {'Frame', 'Time_s'});

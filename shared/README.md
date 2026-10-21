@@ -2,39 +2,74 @@
 
 Add this folder to the MATLAB path before calling its functions. Image processing requires Image Processing Toolbox.
 
-## Vertical image profiles
+## Greyscale profiles and stratification depth
 
-`densityheight.m` averages selected image columns, subtracts a reference profile and returns normalised image-intensity profiles. It does not convert intensity to density. Supply the ordered image filenames and calibration for each sequence:
+This workflow follows the completed thesis, Section 2.5.4, equations (2.19)-(2.20), and Table 2.4. It uses greyscale intensity to locate the boundary. The separate density-reconstruction workflow is in `chapter-02-plif`.
+
+`densityheight.m` sums the selected columns, subtracts the first retained frame's profile, and normalises each corrected frame using its own minimum and maximum:
+
+`G_n(z,t) = (I_c(z,t) - min_z I_c(z,t)) / (max_z I_c(z,t) - min_z I_c(z,t))`.
+
+A constant corrected profile has no boundary. It is stored as zero with `hasContrast = false`; only floating-point subtraction roundoff is treated as zero contrast. The crop and selected columns must remain fixed throughout the sequence. By default all retained columns are used.
 
 ```matlab
 config.imageFolder = imageFolder;
-config.imageFiles = retainedImageNames;     % In time order.
-config.timeSeconds = retainedImageTimes_s;  % Or frameIntervalSeconds.
-config.referenceFrame = referenceFrameIndex;
+config.imageFiles = retainedImageNames;     % In time order, first frame included.
+config.timeSeconds = retainedImageTimes_s; % Or frameIntervalSeconds.
+config.referenceFrame = 1;                 % Required by the thesis method; default 1.
 config.cropRows = retainedRows;
 config.cropColumns = retainedColumns;
-config.averagingColumns = profileColumns;   % Within the crop.
 config.rowCoordinates_m = distancesBelowCeiling_m;
 config.outputFolder = outputFolder;
-results = densityheight(config);
+profiles = densityheight(config);
+
+H = 0.300; % Actual tank height; use H_r for a reduced-height configuration.
+z_m = H - profiles.rowCoordinates; % Detector expects height above the floor.
+thresholds = stratification_height_tolerances();
+k = 3; % Example: rectangular H = 0.300 m, Q = 30 cm^3/min.
+depth = detect_stratification_depth( ...
+    profiles.normalisedProfiles, z_m, thresholds.Epsilon(k), H);
 ```
 
-Crop and averaging fields may be omitted to use the full image. Without `rowCoordinates_m`, the row coordinate runs from 0 at the top to 1 at the bottom. Without `imageFiles`, filenames matching `imagePattern` (default `*.png`) are sorted lexically; check their order against the times. The normalisation minimum comes from the whole retained sequence, so changing the selection changes the scale.
+The detector scans upwards from the lowest physical height and takes the first row with `G_n > epsilon`. It returns the boundary `z_b_m`, depth below the ceiling `h_m = H-z_b_m`, original image-row index and a detection flag. A constant profile or one with no crossing returns `NaN` and `detected = false`. Use the method once a distinct stratified region has developed, as described in the thesis. There is no neighbouring-density-jump or ambient-return condition.
 
-Optional `inspectionFrames`, `inspectionRows` and `inspectionColumns` select raw image sections. `gradientDiagnostic` returns the position beside the largest adjacent profile difference; `legacyDiagnostic` returns a time-ordered profile-value signal. Neither is a threshold-derived layer height. Set `fitTarget` to `'gradient_position'` or `'legacy_profile_signal'` to fit the corresponding enabled diagnostic; its default is `'none'`. `compareModels` enables additional curve comparisons. The removed `'legacy_sorted_signal'` target raises an error because sorting detached values from their frame times.
+`rowCoordinates_m` in `densityheight` means distance below the ceiling; the detector takes height above the floor. Always make the conversion shown above. Without physical coordinates, `densityheight` returns a dimensionless image coordinate, which must not be passed to the detector as metres.
 
-With `outputFolder` set, the function writes `results.mat`, `profiles.csv`, `diagnostics.csv` and displayed JPEG figures. Run `test_densityheight_time_order` for a synthetic time-order check.
-
-## Stratification depth
-
-`detect_stratification_depth.m` accepts reconstructed density profiles (rows by frames, kg m^-3), the height of each retained row (metres), ambient density and a neighbouring-row threshold (kg m^-3). An optional tank height returns `h = H-z_b`:
+The central thresholds and sensitivity ranges are dimensionless. `EpsilonLower` and `EpsilonUpper` are the Table 2.4 range limits, not values for separate repeats. Apply them to the same profile at each sampled time:
 
 ```matlab
-result = detect_stratification_depth( ...
-    densityProfiles, rowCoordinates_m, ambientDensity, epsilon, tankHeight_m);
+if isfinite(thresholds.EpsilonLower(k))
+    lowerThreshold = detect_stratification_depth( ...
+        profiles.normalisedProfiles, z_m, thresholds.EpsilonLower(k), H);
+    upperThreshold = detect_stratification_depth( ...
+        profiles.normalisedProfiles, z_m, thresholds.EpsilonUpper(k), H);
+    hLower_m = upperThreshold.h_m;
+    hUpper_m = lowerThreshold.h_m;
+end
 ```
 
-It scans upwards from the lowest physical row. A neighbouring density difference strictly greater than `epsilon` gives a candidate at the lower row; any exactly ambient row above it rejects that candidate. The first candidate that passes this check is `z_b_m`. It also returns `h_m`, detected-row indices and a detection flag for each frame. The input must be a bounded, calibrated density field. `stratification_height_tolerances.m` returns a table of run-specific thresholds for the thesis data. Do not use these dimensional thresholds with `densityheight.m` intensity profiles. Run `test_detect_stratification_depth` for synthetic detector checks.
+Keep a missing crossing as `NaN`; do not replace it by zero or another frame's height. For logarithmic error bars, transform the positive central and endpoint heights as in Section 2.5.6. No sensitivity range is supplied where Table 2.4 gives a dash.
+
+With `outputFolder` set, `densityheight` writes `results.mat`, `profiles.csv`, `diagnostics.csv` and any displayed JPEG figures. The profile CSV contains `SummedImageIntensity`, `BackgroundCorrectedIntensity` and `NormalisedProfile`. Save the detector results separately with the chosen thresholds and run settings.
+
+### Other diagnostics and compatibility
+
+`averagingColumns` retains its historical field name but selects columns to sum. Omit it to use the full crop. Without `imageFiles`, filenames matching `imagePattern` (default `*.png`) are sorted lexically; check the order against the timestamps.
+
+`gradientDiagnostic` reports the position beside the largest adjacent greyscale difference. `legacyDiagnostic` retains the earlier sequence-scaled, time-ordered profile-value signal separately. Neither determines the thesis boundary. The default `fitTarget` is `'none'`; optional diagnostic fits remain available. `inspectionFrames`, `inspectionRows` and `inspectionColumns` select raw image sections.
+
+The September release `thesis-code-2026-09-27` used an earlier density-jump detector. Current code changes its signature from `(densityProfiles, z, ambientDensity, epsilon, H)` to `(normalisedProfiles, z, epsilon, H)` and replaces dimensional repeat thresholds with the dimensionless Table 2.4 central values and ranges. `densityheight` now returns summed rather than mean raw intensities, per-frame normalisation parameters, and greyscale profiles without inversion. The old release tag is retained for historical citations.
+
+Run the synthetic checks from the repository root:
+
+```matlab
+addpath('shared');
+test_detect_stratification_depth;
+test_greyscale_pipeline;
+test_densityheight_time_order;
+```
+
+They cover threshold equality, flat profiles, sensitivity limits, reversed row order, Table 2.4, image input, frame-specific scaling, timestamp order and saved outputs. They do not reproduce experimental measurements without the source images and calibration.
 
 ## TIFF selection
 
