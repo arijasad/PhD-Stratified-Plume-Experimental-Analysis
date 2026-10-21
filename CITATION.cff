@@ -29,10 +29,6 @@ abstract: 'MATLAB software for analysing stratified-plume experiments from Arij 
   the user.
 
 
-  Daniel Glinnan assisted with the initial ray-forward calibration code, subsequently adapted and developed
-  by Arij Asad.
-
-
   Source code is licensed under MIT; thesis figures and documentation are licensed under CC BY 4.0.'
 keywords:
 - buoyant plumes

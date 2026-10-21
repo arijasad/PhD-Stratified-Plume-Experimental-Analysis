@@ -24,7 +24,7 @@ This is the master version of the software accompanying the thesis.
 
 The density-reconstruction workflow in `chapter-02-plif` adapts Horne-Jones, J. T., Glinnan, D. J., Lawrie, A. G. W. and Williams, R. J. R. (2026), *Controlled accelerations for Rayleigh–Taylor instability*, Experiments in Fluids 67, 96, Section 3.2, equations (16)-(18). [doi:10.1007/s00348-026-04249-4](https://doi.org/10.1007/s00348-026-04249-4).
 
-This citation applies to density reconstruction. The greyscale boundary measurement is described in the thesis. The thesis also acknowledges Daniel Glinnan's assistance with the initial ray-forward calibration code, subsequently adapted and developed by Arij Asad.
+This citation applies to density reconstruction. The greyscale boundary measurement is described in the thesis.
 
 ## Citation and licence
 
