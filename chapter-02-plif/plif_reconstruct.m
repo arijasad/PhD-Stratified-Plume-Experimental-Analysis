@@ -58,7 +58,7 @@ if isempty(cfg.kappa1)
     fitRows = (1:m.nx)';
     valid_cs(fitRows < cfg.attenuationFitRows(1),:) = false;
     valid_cs(fitRows > cfg.attenuationFitRows(2),:) = false;
-    range_csx = repmat(fitRows,1,m.ny) ./ ds_array;
+    range_csx = range_csx' .* ds_array;
     valid_cs = valid_cs & isfinite(img_lt2) & img_lt2 > 0 & isfinite(range_csx);
     fitX = range_csx(valid_cs);
     fitY = log(img_lt2(valid_cs));
