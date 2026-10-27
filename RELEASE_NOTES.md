@@ -1,3 +1,10 @@
+## thesis-code-2026-10-27.4
+
+Date: 2026-10-27  
+DOI: https://doi.org/10.5281/zenodo.23692106
+
+- Removed the optional physical-parameter prescribed model because its exponent was dimensionally inconsistent with the thesis model in Eqs. 3.106–3.107. Explicit coefficient prescriptions and fitted power laws are unchanged.
+
 # Release notes
 
 ## thesis-code-2026-10-27.3

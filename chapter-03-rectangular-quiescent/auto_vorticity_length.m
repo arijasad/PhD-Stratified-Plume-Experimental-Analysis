@@ -865,24 +865,8 @@ function [amplitude, exponent] = prescribedModel(cfg)
         validateattributes(model.exponent, {'numeric'}, ...
             {'real','finite','scalar'}, mfilename, 'model.exponent');
         exponent = model.exponent;
-    elseif strcmpi(model.kind, 'physical')
-        fields = {'rhoHigh','rhoLow','area','gravity','height','densityDifference'};
-        requireFields(model, fields, 'cfg.model');
-        for k = 1:numel(fields)
-            validateattributes(model.(fields{k}), {'numeric'}, ...
-                {'real','finite','scalar','positive'}, mfilename, ['model.' fields{k}]);
-        end
-        if model.rhoHigh <= model.rhoLow
-            error('model.rhoHigh must be greater than model.rhoLow.');
-        end
-        atwood = (model.rhoHigh-model.rhoLow)/(model.rhoHigh+model.rhoLow);
-        first = model.gravity*atwood^2/(model.area^2*pi^2);
-        exponent = -first/(model.gravity*model.height* ...
-            model.densityDifference/model.rhoHigh)^(3/2);
-        if ~isfinite(exponent)
-            error('The prescribed model parameters give a nonfinite exponent.');
-        end
     else
-        error('model.kind must be ''coefficients'' or ''physical''.');
+        error(['model.kind must be ''coefficients''. The physical prescribed model ' ...
+            'was removed because its exponent was dimensionally inconsistent.']);
     end
 end

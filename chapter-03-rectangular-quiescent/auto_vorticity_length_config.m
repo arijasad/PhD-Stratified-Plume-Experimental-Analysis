@@ -43,22 +43,9 @@ cfg.powerMode = 'fit';                 % 'fit' or 'prescribed'
 cfg.earlyFitPositions = [];            % Positions in the selected sequence; []: no fit
 cfg.powerFitPositions = [];            % Positions in the selected sequence; []: all
 
-% A prescribed curve has the form L = amplitude*t^exponent, using the same
-% normalised coordinates as the measured lengths and times.
-cfg.model.kind = 'coefficients';       % 'coefficients' or 'physical'
+% A prescribed curve uses explicit dimensionless coordinates:
+% L = amplitude*t^exponent.
+cfg.model.kind = 'coefficients';       % Use explicit coefficients
 cfg.model.amplitude = [];              % Required only for a prescribed curve
-cfg.model.exponent = [];               % Required for prescribed 'coefficients'
-
-% The 'physical' option retains the expression used in the thesis script:
-% Atwood = (rhoHigh-rhoLow)/(rhoHigh+rhoLow)
-% exponent = -(g*Atwood^2/(area^2*pi^2)) / ...
-%              (g*height*densityDifference/rhoHigh)^(3/2).
-% Supply the same dimensional convention used to derive the chosen curve.
-% densityDifference is independent of the density pair in this expression.
-cfg.model.rhoHigh = [];
-cfg.model.rhoLow = [];
-cfg.model.area = [];
-cfg.model.gravity = [];
-cfg.model.height = [];
-cfg.model.densityDifference = [];
+cfg.model.exponent = [];               % Required for a prescribed curve
 end

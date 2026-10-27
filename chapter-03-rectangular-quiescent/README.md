@@ -20,7 +20,7 @@ cfg = auto_vorticity_length_config();
 
 The remaining detector options are documented in the configuration template. `selectionMode = 'outermost'` selects the widest qualifying edge pair; `'best-pair'` scores pairs and checks competing candidates. `reviewEachFrame` lets you confirm, replace or skip each detection. Closing the review dialogue saves measurements already confirmed.
 
-`earlyFitPositions` and `powerFitPositions` refer to selected frame positions. An empty early interval disables the exponential fit; an empty power interval includes all selected frames. `powerMode = 'prescribed'` displays a supplied curve using either explicit coefficients or the physical parameters documented in the configuration file. Fits require at least three positive lengths at positive normalised times.
+`earlyFitPositions` and `powerFitPositions` refer to selected frame positions. An empty early interval disables the exponential fit; an empty power interval includes all selected frames. `powerMode = 'prescribed'` displays `L = amplitude*t^exponent` using explicit values in the configuration file. For the theoretical curve, Eq. 3.106 gives `m_v = C_g/alpha - 2`, so the exponent on normalised time is `-m_v`. Fits require at least three positive lengths at positive normalised times.
 
 Results are saved in `outputFolder`:
 
