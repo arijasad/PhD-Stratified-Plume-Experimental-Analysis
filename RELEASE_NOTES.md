@@ -1,3 +1,10 @@
+## thesis-code-2026-10-27.6
+
+DOI: https://doi.org/10.5281/zenodo.23701600
+
+- Corrected the PLIF optical model so background extinction attenuates the ray without being counted as fluorescence. Calibration fitting separates background and dye attenuation. The default settings use `kappa0 = 0`, matching the thesis model.
+- Updated the synthetic background case to use non-fluorescent background attenuation.
+
 ## thesis-code-2026-10-27.5
 
 Date: 2026-10-27  
