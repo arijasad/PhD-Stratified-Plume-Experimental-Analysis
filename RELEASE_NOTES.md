@@ -1,3 +1,12 @@
+## thesis-code-2026-10-27.8
+
+Date: 2026-10-27
+DOI: https://doi.org/10.5281/zenodo.23710477
+
+- Set the PLIF thesis configuration to `kappa0 = 0` and reject nonzero values in this release.
+- Keep the nozzle region in the configured validation crop while excluding uncovered and unconverged pixels from residual statistics.
+- Document that the thesis height maps and detected boundaries use per-time normalised `G_n`.
+
 ## thesis-code-2026-10-27.7
 
 Date: 2026-10-27
