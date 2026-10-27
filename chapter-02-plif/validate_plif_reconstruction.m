@@ -117,10 +117,14 @@ for k = 1:nFiles
     syntheticFluorescence = img_new;
     absoluteResidual = residualImage;
     reconstructedField = result.reconstructedField;
+    maskedReconstructedField = result.maskedReconstructedField;
+    validMask = result.validMask;
+    coverageMask = result.coverageMask;
     sourceFile = imageFiles{k};
     dataPath = fullfile(cfg.outputFolder,[outputNames{k} '.mat']);
     save(dataPath,'measuredFluorescence','syntheticFluorescence', ...
-        'absoluteResidual','reconstructedField','result','cfg','sourceFile');
+        'absoluteResidual','reconstructedField','maskedReconstructedField', ...
+        'validMask','coverageMask','result','cfg','sourceFile');
 end
 summaryTable = makeSummary(File,RMSE,NRMSE_percent,MAE,MaxAbsResidual, ...
     Correlation,SignalPixelCount,SignalRMSE,SignalNRMSE_percent);
