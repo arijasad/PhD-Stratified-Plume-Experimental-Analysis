@@ -21,7 +21,7 @@ summary = validate_plif_reconstruction(cfg);
 | `intensityDivisor`, `calibrationScaleFactor` | Raw intensity corresponding to 1, and multiplier placing calibration and measurement images on a common scale. |
 | `geometry.sourceCoordinates`, `geometry.wallThickness`, `geometry.unseenFluidDepth` | Source position `[horizontal vertical]` and distances in cropped, unresized image pixels. |
 | `geometry.refractiveIndices`, `geometry.fanHalfAngleDegrees` | Refractive indices `[air wall fluid]` and source fan half-angle in degrees. |
-| `calibrationField`, `kappa0`, `kappa1`, `attenuationFitRows` | Known field on the resized grid, background attenuation per resized row, optional field-dependent attenuation coefficient (`[]` fits it), and inclusive resized row range for that fit. |
+| `calibrationField`, `kappa0`, `kappa1`, `attenuationFitRows` | Known field on the resized grid, non-fluorescent background attenuation per resized row (0 for the thesis model), optional field-dependent attenuation coefficient (`[]` fits it), and inclusive resized row range for that fit. |
 | `forwardIncidentIntensity` | `'calibration'`, a nonnegative scalar or one value per image column for `test_forward_ray_A`. Validation uses calibration-derived values. |
 | `signalThresholdFraction`, `figureResolution`, `overwrite` | Validation signal region, figure dpi and output replacement. |
 
@@ -43,3 +43,10 @@ test_plif_convergence;
 ```
 
 These synthetic Beer–Lambert checks require no experimental data.
+
+
+## Optical model and thesis settings
+
+The thesis model in Section 2.5.3 uses attenuation proportional to dye concentration and has no additive background-extinction term. Set `kappa0 = 0` to reproduce that model. The generic solver also accepts nonzero `kappa0` as non-fluorescent background attenuation: it contributes to ray attenuation, but not to emitted fluorescence. When `kappa1` is fitted, the calibration slope is separated into dye and background contributions.
+
+The author confirms that the thesis reconstruction used the thesis model (`kappa0 = 0`). The supplied settings file selects that configuration. The generic nonzero option is retained for cases with non-fluorescent background attenuation.
