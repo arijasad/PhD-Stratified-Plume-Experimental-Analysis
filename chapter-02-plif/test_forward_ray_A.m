@@ -1,8 +1,8 @@
 function outputFiles = test_forward_ray_A(cfg)
 % Reconstruct each selected image and save its forward projection.
 % Start with cfg = plif_settings(), then supply the image and calibration data.
-% The MAT file keeps the dimensionless field at full precision.
-% Standalone field PNGs are saved separately from comparison panels.
+% MAT files retain the full-precision field and its validity masks.
+% The standalone PNG is a masked preview; its mask is also saved separately.
 if nargin < 1
     error('PLIF:Settings', 'Supply a configuration created with plif_settings().');
 end
@@ -10,28 +10,34 @@ end
 fieldFolder = fullfile(cfg.outputFolder,'reconstructed_fields');
 for k = 1:numel(imageFiles)
     fieldPath = fullfile(fieldFolder,[outputNames{k} '.png']);
-    if ~cfg.overwrite && isfile(fieldPath)
-        error('PLIF:ExistingOutput', 'Output already exists: %s',fieldPath);
+    maskPath = fullfile(fieldFolder,[outputNames{k} '_valid_mask.png']);
+    if ~cfg.overwrite && (isfile(fieldPath) || isfile(maskPath))
+        error('PLIF:ExistingOutput', 'A field preview or validity mask already exists for %s.',outputNames{k});
     end
 end
 if ~isfolder(fieldFolder)
     mkdir(fieldFolder);
 end
-outputFiles = cell(numel(imageFiles),3);
+outputFiles = cell(numel(imageFiles),4);
 for k = 1:numel(imageFiles)
     fprintf('Reconstruction %d/%d: %s\n',k,numel(imageFiles),imageFiles{k});
     image_in = plif_read_image(fullfile(cfg.inputFolder,imageFiles{k}),cfg.cropRect);
     result = plif_reconstruct(image_in,cali,cfg);
     sourceFile = imageFiles{k};
     dataPath = fullfile(cfg.outputFolder,[outputNames{k} '.mat']);
-    save(dataPath,'result','cfg','sourceFile');
+    maskedReconstructedField = result.maskedReconstructedField;
+    validMask = result.validMask;
+    coverageMask = result.coverageMask;
+    save(dataPath,'result','maskedReconstructedField','validMask', ...
+        'coverageMask','cfg','sourceFile');
     fieldPath = fullfile(fieldFolder,[outputNames{k} '.png']);
-    imwrite(result.reconstructedField,fieldPath,'png');
+    maskPath = fullfile(fieldFolder,[outputNames{k} '_valid_mask.png']);
+    imwrite(uint8(validMask)*255,maskPath,'png');
 
     fig = figure('Color','w','Visible','off','Position',[100 100 1400 440]);
     cleanup = onCleanup(@() close(fig));
     layout = tiledlayout(fig,1,4,'Padding','compact','TileSpacing','compact');
-    panels = {result.measuredFluorescence,result.reconstructedField, ...
+    panels = {result.measuredFluorescence,result.maskedReconstructedField, ...
         result.syntheticFluorescence, ...
         abs(result.syntheticFluorescence-result.measuredFluorescence)};
     labels = {'Measured fluorescence','Reconstructed field', ...
@@ -48,6 +54,7 @@ for k = 1:numel(imageFiles)
     for p = 1:4
         ax = nexttile(layout);
         imagesc(ax,panels{p});
+        set(ax,'Color','white');
         axis(ax,'image');
         axis(ax,'off');
         title(ax,labels{p});
@@ -62,7 +69,17 @@ for k = 1:numel(imageFiles)
     sgtitle(layout,sourceFile,'Interpreter','none');
     figurePath = fullfile(cfg.outputFolder,[outputNames{k} '.png']);
     exportgraphics(fig,figurePath,'Resolution',cfg.figureResolution,'BackgroundColor','white');
-    outputFiles(k,:) = {dataPath,figurePath,fieldPath};
+
+    fieldFig = figure('Color','w','Visible','off');
+    fieldAxes = axes(fieldFig);
+    imagesc(fieldAxes,result.maskedReconstructedField,[0 1]);
+    set(fieldAxes,'Color','white');
+    axis(fieldAxes,'image');
+    axis(fieldAxes,'off');
+    colormap(fieldFig,gray(256));
+    exportgraphics(fieldFig,fieldPath,'Resolution',cfg.figureResolution,'BackgroundColor','white');
+    close(fieldFig);
+    outputFiles(k,:) = {dataPath,figurePath,fieldPath,maskPath};
     clear cleanup
 end
 end
