@@ -10,7 +10,15 @@ This workflow follows the completed thesis, Section 2.5.4, equations (2.19)-(2.2
 
 `G_n(z,t) = (I_c(z,t) - min_z I_c(z,t)) / (max_z I_c(z,t) - min_z I_c(z,t))`.
 
-The stratification boundaries are detected using the per-frame normalised greyscale profile `G_n`, following Section 2.5.4 of the thesis. The background shading in the thesis height-time figures is a separate visualisation, showing the dye signal normalised by its maximum over the complete experimental record. This display normalisation is distinct from the per-frame normalisation used for boundary detection.
+The stratification boundaries are detected using the per-frame normalised greyscale profile `G_n`, following Section 2.5.4 of the thesis. The thesis height-time figure backgrounds use dye signal normalised by its maximum over the complete experimental record. This display normalisation is separate from boundary detection. `normalise_dye_record.m` applies this full-record scaling to a supplied image stack or signal array; it does not change the per-frame `G_n` profiles used to detect stratification boundaries.
+
+For height-time figure backgrounds, apply the display scaling to the complete record at once:
+
+```matlab
+[displaySignal, displayMaximum] = normalise_dye_record(dyeSignal);
+```
+
+`dyeSignal` is the dye-signal array used for display. The helper divides all values by one maximum across the full array, matching the scaling described in the thesis captions.
 
 A constant corrected profile has no boundary. It is stored as zero with `hasContrast = false`; only floating-point subtraction roundoff is treated as zero contrast. The crop and selected columns must remain fixed throughout the sequence. By default all retained columns are used.
 
