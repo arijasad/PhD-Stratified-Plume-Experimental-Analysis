@@ -1,3 +1,10 @@
+## thesis-code-2026-10-27.9
+
+Date: 2026-10-27  
+DOI: https://doi.org/10.5281/zenodo.23715098
+
+- Clarified that stratification boundaries use per-frame normalised `G_n`, while the thesis height-time background shading uses dye signal normalised by its maximum over the complete experimental record.
+
 ## thesis-code-2026-10-27.8
 
 Date: 2026-10-27
@@ -5,7 +12,7 @@ DOI: https://doi.org/10.5281/zenodo.23710477
 
 - Set the PLIF thesis configuration to `kappa0 = 0` and reject nonzero values in this release.
 - Keep the nozzle region in the configured validation crop while excluding uncovered and unconverged pixels from residual statistics.
-- Document that the thesis height maps and detected boundaries use per-time normalised `G_n`.
+- Documented per-time normalised `G_n` for the greyscale method. Release 0.9 clarifies that this applies to boundary detection; height-time background shading uses a separate full-record normalisation.
 
 ## thesis-code-2026-10-27.7
 
