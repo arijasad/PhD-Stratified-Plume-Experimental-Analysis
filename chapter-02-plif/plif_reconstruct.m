@@ -92,7 +92,7 @@ brays0 = wf.brays;
 imageVector = reshape(img',[],1);
 dens = ones(m.nx*m.ny,1);
 densityMask = false(m.nx*m.ny,1);
-[dens, densityMask, convergedRows] = rtrace(m,rig,imageVector,dens,wf,brays0);
+[dens, densityMask, convergedRows] = rtrace(m,rig,imageVector,dens,wf,brays0,kappa0);
 density = reshape(dens',[m.ny,m.nx])';
 coverageMask = reshape(densityMask',[m.ny,m.nx])';
 validMask = coverageMask & repmat(convergedRows,1,m.ny);
@@ -176,7 +176,7 @@ ray_y = (x_pos+d_air*tan(theta_angle_air)+d_wall*tan(theta_angle_wall) ...
 ray_dy = tan(theta_angle_fluid);
 end
 
-function [dens, touched, convergedRows]=rtrace(m, rig, image, dens, wf, brays0)
+function [dens, touched, convergedRows]=rtrace(m, rig, image, dens, wf, brays0, kappa0)
 % March through the image and solve each row by bounded Newton iteration.
 dens(:) = 0.5 ;
 touched = false(m.nx*m.ny,1);
