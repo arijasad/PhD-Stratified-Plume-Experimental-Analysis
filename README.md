@@ -28,6 +28,6 @@ This citation applies to density reconstruction. The greyscale boundary measurem
 
 ## Citation and licence
 
-Cite *Stratified plume experimental analysis: Thesis code*, Cite *Stratified plume experimental analysis: Thesis code*, version `thesis-code-2026-10-27.2`. This version is archived at [doi:10.5281/zenodo.23688686](https://doi.org/10.5281/zenodo.23688686). The all-versions DOI is [10.5281/zenodo.23545911](https://doi.org/10.5281/zenodo.23545911). Citation metadata are provided in [CITATION.cff](CITATION.cff).
+Cite *Stratified plume experimental analysis: Thesis code*, version `thesis-code-2026-10-27.3` ([doi:10.5281/zenodo.23689541](https://doi.org/10.5281/zenodo.23689541)). The all-versions DOI is [10.5281/zenodo.23545911](https://doi.org/10.5281/zenodo.23545911). Citation metadata are provided in [CITATION.cff](CITATION.cff).
 
 The source code is available under the [MIT licence](LICENSE). Supporting documentation is provided in the folder READMEs under CC BY 4.0.

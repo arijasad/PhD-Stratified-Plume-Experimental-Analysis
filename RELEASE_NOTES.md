@@ -1,5 +1,12 @@
 # Release notes
 
+## thesis-code-2026-10-27.3
+
+Date: 2026-10-27  
+DOI: https://doi.org/10.5281/zenodo.23689541
+
+- Increased the similarity-profile λ slider maximum to 2.5 so the circular laminar-fit value (λ = 2.22532) can be displayed.
+
 ## thesis-code-2026-10-27.2
 
 Date: 2026-10-27  
