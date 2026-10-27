@@ -7,6 +7,10 @@ validateattributes(cfg.resizeScale, {'numeric'}, {'scalar','finite','positive'})
 validateattributes(cfg.intensityDivisor, {'numeric'}, {'scalar','finite','positive'});
 validateattributes(cfg.calibrationScaleFactor, {'numeric'}, {'scalar','finite','positive'});
 validateattributes(cfg.kappa0, {'numeric'}, {'scalar','finite','nonnegative'});
+if cfg.kappa0 ~= 0
+    error('PLIF:UnsupportedBackgroundAttenuation', ...
+        'The thesis reconstruction uses kappa0 = 0; nonzero background attenuation is unsupported.');
+end
 
 img0 = imageIntensity(image_in, cfg.intensityDivisor);
 calibration = imageIntensity(cali, cfg.intensityDivisor) * cfg.calibrationScaleFactor;
