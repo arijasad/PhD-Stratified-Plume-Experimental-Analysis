@@ -63,7 +63,7 @@ if isempty(cfg.kappa1)
         error('PLIF:CalibrationFit', 'The selected rows contain too few calibration points.');
     end
     fitCoefficients = polyfit(fitX,fitY,1);
-    kappa1 = -fitCoefficients(1);
+    kappa1 = -fitCoefficients(1) - cfg.kappa0;
 else
     kappa1 = cfg.kappa1;
 end
@@ -72,7 +72,7 @@ kappa0 = cfg.kappa0;
 rig.dmin = 0;
 rig.dmax = 1;
 rig.refindex = @() cfg.geometry.refractiveIndices(3);
-rig.sigma = @(d) kappa1*d+kappa0;
+rig.sigma = @(d) kappa1*d;
 rig.dsigma = @() kappa1;
 
 % Each row provides an estimate of the same incident ray intensity.
@@ -239,9 +239,11 @@ for i = 1:m.nx
                     fds = fracs(j) .* ds;
                     % Illumination does not disappear when concentration is zero.
                     rowCovered(j) = rowCovered(j) || (fds > 0 && r0.inten > 0);
-                    fracs(j) = rig.sigma(dens(icell)) * fds;
+                    fluorescentDepth = rig.sigma(dens(icell)) * fds;
+                    totalDepth = fluorescentDepth + kappa0 * fds;
+                    fracs(j) = fluorescentDepth;
                     dfrac(j) = rig.dsigma() * fds;
-                    dtau = dtau + fracs(j);
+                    dtau = dtau + totalDepth;
                 end
                 [loss, dloss] = lightTubeLoss(r0.inten, dtau, rdv);
                 r0.inten = r0.inten * exp(-dtau);
@@ -465,12 +467,13 @@ function img=generate_angled_image(m,density,kappa1,kappa0,wf,brays0)
                 opticalDepth = zeros(1,m.ny);
                 for j = j0:j1
                     fds = fracs(j)*ds;
-                    opticalDepth(j) = (kappa1*density(ix,j)+kappa0)*fds;
+                    fluorescentDepth(j) = kappa1*density(ix,j)*fds;
+                    opticalDepth(j) = fluorescentDepth(j)+kappa0*fds;
                 end
                 tau = sum(opticalDepth(j0:j1));
                 loss = lightTubeLoss(r0.inten, tau, rdv);
                 for j = j0:j1
-                    img(ix,j) = img(ix,j)+loss*opticalDepth(j);
+                    img(ix,j) = img(ix,j)+loss*fluorescentDepth(j);
                 end
                 r0.inten = r0.inten*exp(-tau);
                 rtmp2{isrc}.r{jp}.y_l=r0.y_l+r0.dy_l;
@@ -514,17 +517,21 @@ function I0=reCalcI0(img_lt,den_array_lt,ds_array,m,kappa1,kappa0)
 % Recover the incident intensity from the known calibration field.
     I0_guess=zeros(size(img_lt));
     atten_products=ones(size(img_lt));
-    opticalDepth = (kappa1.*den_array_lt+kappa0).*ds_array;
+    fluorescentDepth = kappa1.*den_array_lt.*ds_array;
+    opticalDepth = fluorescentDepth + kappa0.*ds_array;
     attenuation = exp(-opticalDepth);
-    absorbedFraction = -expm1(-opticalDepth);
+    signalFactor = ones(size(opticalDepth));
+    nonzeroDepth = opticalDepth ~= 0;
+    signalFactor(nonzeroDepth) = -expm1(-opticalDepth(nonzeroDepth)) ./ opticalDepth(nonzeroDepth);
+    fluorescentFraction = fluorescentDepth .* signalFactor;
     for ix=2:m.nx
         atten_products(ix,:)=atten_products(ix-1,:).*attenuation(ix-1,:);
     end
     for ix=1:m.nx
         if ix>1
-            I0_guess(ix,:)=img_lt(ix,:)./(atten_products(ix,:).*absorbedFraction(ix,:));
+            I0_guess(ix,:)=img_lt(ix,:)./(atten_products(ix,:).*fluorescentFraction(ix,:));
         else
-            I0_guess(ix,:)=img_lt(ix,:)./absorbedFraction(ix,:);
+            I0_guess(ix,:)=img_lt(ix,:)./fluorescentFraction(ix,:);
         end
     end
     I0=I0_guess;
