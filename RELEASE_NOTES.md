@@ -1,5 +1,12 @@
 # Release notes
 
+## thesis-code-2026-10-27.2
+
+Date: 2026-10-27  
+DOI: https://doi.org/10.5281/zenodo.23688686
+
+- Corrected `calcbfracs2a` to initialise cumulative tube area at the clipped image boundary. Reconstruction and forward projection use the same corrected overlap calculation.
+
 ## thesis-code-2026-10-27
 
 Date: 2026-10-27  
