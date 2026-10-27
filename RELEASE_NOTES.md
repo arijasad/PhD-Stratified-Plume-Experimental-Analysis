@@ -1,3 +1,9 @@
+## thesis-code-2026-10-27.10
+
+Date: 2026-10-27
+
+- Added `normalise_dye_record.m` to apply the full-record maximum scaling described in the thesis height-time figure captions. It is separate from the per-frame `G_n` boundary-detection workflow.
+
 ## thesis-code-2026-10-27.9
 
 Date: 2026-10-27  
