@@ -69,19 +69,17 @@ function test_plif_convergence()
     result = plif_reconstruct(measured, calibration, cfg);
     assertAccepted(result, measured, expected, 'optically thin positive signal');
 
-    % Positive background absorption makes an exactly black covered pixel
-    % impossible even at chi = 0. It must remain marked unconverged.
-    [cfg, ~] = singlePixelFixture();
+    % The thesis model assumes zero background attenuation. Reject a nonzero
+    % value rather than treating background absorption as fluorescence.
+    [cfg, calibration] = singlePixelFixture();
     cfg.kappa0 = 0.02;
-    calibration = -expm1(-(cfg.kappa0 + cfg.kappa1)) / 0.3;
-    result = plif_reconstruct(0, calibration, cfg);
-    assert(result.coverageMask && result.reconstructedField == 0, ...
-        'The background-absorption case must reach the lower bound in a covered pixel.');
-    assert(isequal(result.unconvergedRows, 1) && ~result.validMask && ...
-        isnan(result.maskedReconstructedField), ...
-        'An unattainable dark signal must not be accepted as converged.');
-    assert(abs(result.syntheticFluorescence + expm1(-cfg.kappa0)) < 1e-12, ...
-        'The lower-bound projection must retain the background absorption.');
+    caught = false;
+    try
+        plif_reconstruct(0, calibration, cfg);
+    catch exception
+        caught = strcmp(exception.identifier,'PLIF:UnsupportedBackgroundAttenuation');
+    end
+    assert(caught, 'The thesis reconstruction must reject nonzero kappa0.');
 
     % Two successive complete tube segments also test propagation of the
     % accepted first-row attenuation into the next reconstruction row.
