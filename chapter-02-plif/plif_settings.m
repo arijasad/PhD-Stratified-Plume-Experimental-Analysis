@@ -23,7 +23,7 @@ cfg.geometry.fanHalfAngleDegrees = NaN;
 % Values must lie between 0 and 1, as in the reconstruction.
 cfg.calibrationField = [];
 cfg.attenuationFitRows = [];      % Inclusive [first last] rows of the resized image.
-cfg.kappa0 = NaN;                 % Background attenuation per resized image row.
+cfg.kappa0 = 0;                   % Thesis model: no background attenuation.
 cfg.kappa1 = [];                  % [] fits the calibration; a scalar supplies it.
 
 % The test driver requires 'calibration', or an incident intensity for each ray.
