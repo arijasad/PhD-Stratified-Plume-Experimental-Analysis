@@ -30,8 +30,6 @@ validateattributes(den_array, {'numeric'}, ...
     {'real','finite','size',[m.nx m.ny],'>=',0,'<=',1});
 
 [ray_y, ray_dy] = generate_ray_initial(cfg.geometry, img0, m, m.ny);
-ray_paths_all = {ray_y};
-ray_path_dy_all = {ray_dy};
 wf.brays = {struct('r', {cell(1,m.ny)})};
 wf.tracks = {struct('i',1)};
 for iray = 1:m.ny
@@ -44,8 +42,7 @@ den_array_lt = imageToLightTube(den_array,m,brays0,wf,0);
 img_lt2 = imageToLightTube(img_cs,m,brays0,wf,1);
 ds_array = generate_ds_array(ray_y,ray_dy,m);
 
-% Keep the row/ds coordinate used in the supplied calibration fit.
-% This is a fitting convention, not cumulative distance along the ray.
+% Use row index times per-row ray-step length for the calibration fit.
 fitCoefficients = [NaN NaN];
 if isempty(cfg.kappa1)
     validateattributes(cfg.attenuationFitRows, {'numeric'}, ...
@@ -58,7 +55,7 @@ if isempty(cfg.kappa1)
     fitRows = (1:m.nx)';
     valid_cs(fitRows < cfg.attenuationFitRows(1),:) = false;
     valid_cs(fitRows > cfg.attenuationFitRows(2),:) = false;
-    range_csx = range_csx' .* ds_array;
+    range_csx = fitRows .* ds_array;
     valid_cs = valid_cs & isfinite(img_lt2) & img_lt2 > 0 & isfinite(range_csx);
     fitX = range_csx(valid_cs);
     fitY = log(img_lt2(valid_cs));
@@ -94,8 +91,14 @@ end
 brays0 = wf.brays;
 imageVector = reshape(img',[],1);
 dens = ones(m.nx*m.ny,1);
-dens = rtrace(m,rig,imageVector,dens,wf,brays0);
+densityMask = false(m.nx*m.ny,1);
+[dens, densityMask, convergedRows] = rtrace(m,rig,imageVector,dens,wf,brays0);
 density = reshape(dens',[m.ny,m.nx])';
+coverageMask = reshape(densityMask',[m.ny,m.nx])';
+validMask = coverageMask & repmat(convergedRows,1,m.ny);
+maskedReconstructedField = density;
+maskedReconstructedField(~validMask) = NaN;
+unconvergedRows = find(~convergedRows);
 
 % Forward projection can use the calibration estimate or supplied intensities.
 forwardRays = brays0;
@@ -117,14 +120,15 @@ end
 for iray = 1:m.ny
     forwardRays{1}.r{iray}.inten = forwardI0(iray);
 end
-den_lt = imageToLightTube(density,m,brays0,wf,0);
-[img_new,~,~] = generate_angled_image(m,den_lt,kappa1,kappa0, ...
-    wf,forwardRays,ray_paths_all,ray_path_dy_all);
+img_new = generate_angled_image(m,density,kappa1,kappa0,wf,forwardRays);
 result = struct('reconstructedField',density, 'measuredFluorescence',img, ...
     'syntheticFluorescence',img_new, 'calibrationField',den_array, ...
     'incidentIntensityEstimates',I0, 'incidentIntensity',I0_val, ...
     'forwardIncidentIntensity',forwardI0, 'kappa0',kappa0, 'kappa1',kappa1, ...
-    'attenuationFitCoefficients',fitCoefficients, 'gridSize',[m.nx m.ny]);
+    'attenuationFitCoefficients',fitCoefficients, 'gridSize',[m.nx m.ny], ...
+    'coverageMask',coverageMask, 'validMask',validMask, ...
+    'maskedReconstructedField',maskedReconstructedField, ...
+    'unconvergedRows',unconvergedRows);
 end
 
 function img = imageIntensity(raw, divisor)
@@ -172,9 +176,11 @@ ray_y = (x_pos+d_air*tan(theta_angle_air)+d_wall*tan(theta_angle_wall) ...
 ray_dy = tan(theta_angle_fluid);
 end
 
-function [dens]=rtrace(m, rig, image, dens, wf, brays0)
+function [dens, touched, convergedRows]=rtrace(m, rig, image, dens, wf, brays0)
 % March through the image and solve each row by bounded Newton iteration.
 dens(:) = 0.5 ;
+touched = false(m.nx*m.ny,1);
+convergedRows = false(m.nx,1);
 nsrc = numel(wf.brays);
 rtmp = brays0;
 rtmp1 = brays0;
@@ -256,6 +262,7 @@ for i = 1:m.nx
         for j = 1:m.ny
             if im1(j) ~= 0.0
                 icell = (i-1)*m.ny + j;
+                touched(icell) = true;
                 scale = image(icell) / im1(j);
                 d = dens(icell) - (im1(j) - image(icell)) / dim1(j);
                 d = max(min(d, rig.dmax), rig.dmin);
@@ -265,6 +272,7 @@ for i = 1:m.nx
             end
         end
         if relativeError < 1e-6
+            convergedRows(i) = true;
             break;
         end
     end
@@ -362,15 +370,7 @@ function img_lt=imageToLightTube(img,m,brays0,wf,isIM)
     end
 end
 
-function [img,img_lt,I0]=generate_angled_image(m,den_array_lt,kappa1,kappa0,wf,brays0,ray_paths_all,ray_path_dy_all)
-% Attenuate each ray, then distribute its fluorescence across the image.
-    ds_array=[];
-    for isrc=1:numel(ray_paths_all)
-    ray_paths = ray_paths_all{isrc};
-    ray_path_dy = ray_path_dy_all{isrc};
-    ray_paths4=ray_paths;
-    ds_array=horzcat(ds_array,generate_ds_array(ray_paths,ray_path_dy,m));
-    end
+function img=generate_angled_image(m,density,kappa1,kappa0,wf,brays0)
     nsrc = numel(wf.brays);
     rtmp = brays0;
     rtmp1 = brays0;
@@ -393,20 +393,10 @@ function [img,img_lt,I0]=generate_angled_image(m,den_array_lt,kappa1,kappa0,wf,b
         error(['Invalid incident-intensity array in forward reconstruction. ' ...
             'Check the calibration-derived I0 values.'])
     end
-    in_lt=zeros(m.nx+1,tnpi);
-    in_lt(1,:)=I0;
-    img_lt=zeros(m.nx,tnpi);
-    for i = 2:m.nx+1
-        in_lt(i,:)=in_lt(i-1,:).*exp(-(kappa1*den_array_lt(i-1,:)+kappa0).*ds_array(i-1,:));
-    end
-    for i= 1:m.nx
-        img_lt(i,:)=(in_lt(i,:)-in_lt(i+1,:));
-    end
     img=zeros(m.nx,m.ny);
     for ix=1:m.nx
         rtmp1 = rtmp;
         rtmp2 = rtmp;
-        imsum=zeros(1,m.ny);
         for isrc=1:nsrc
             npi = numel(rtmp1{isrc}.r);
             for jp=1:npi
@@ -423,17 +413,27 @@ function [img,img_lt,I0]=generate_angled_image(m,den_array_lt,kappa1,kappa0,wf,b
                     yx1 = max(y01, y11);
                 j0 = max(floor(yn0/m.dy), 1);
                 j1 = min(ceil(yx1/m.dy), m.ny);
-                fracs2a=zeros(1,m.ny);
-                [fracs2a] = calcbfracs2a(m,y00,y10,y11,y01,yn0, yx0, yn1, yx1);
-                if isrc==1
-                        irl=jp;
-                    else
-                        irl=sum(tnpi2(isrc-1))+jp;
+                if j1 < 0 || j0 > m.ny
+                    continue;
                 end
-                atot = 0.5 * (yn1 + yx1 - yn0 - yx0);
+                fracs=calcbfracs2a(m,y00,y10,y11,y01,yn0, yx0, yn1, yx1);
+                dyt = (y1-y0);
+                ds = sqrt(dyt^2+m.dx^2);
+                opticalDepth = zeros(1,m.ny);
                 for j = j0:j1
-                    img(ix,j)=img(ix,j)+fracs2a(j)*img_lt(ix,irl);
-                    imsum(j)=imsum(j)+fracs2a(j);
+                    fds = fracs(j)*ds;
+                    opticalDepth(j) = (kappa1*density(ix,j)+kappa0)*fds;
+                end
+                tau = sum(opticalDepth(j0:j1));
+                if tau > 0.0
+                    incomingIntensity = r0.inten;
+                    outgoingIntensity = incomingIntensity*exp(-tau);
+                    absorbedIntensity = incomingIntensity-outgoingIntensity;
+                    loss = absorbedIntensity*rdv/tau;
+                    for j = j0:j1
+                        img(ix,j) = img(ix,j)+loss*opticalDepth(j);
+                    end
+                    r0.inten = outgoingIntensity;
                 end
                 rtmp2{isrc}.r{jp}.y_l=r0.y_l+r0.dy_l;
                 rtmp2{isrc}.r{jp}.dy_l=r0.dy_l;
