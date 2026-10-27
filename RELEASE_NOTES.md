@@ -1,3 +1,12 @@
+## thesis-code-2026-10-27.7
+
+Date: 2026-10-27
+DOI: https://doi.org/10.5281/zenodo.23708559
+
+- Pass `kappa0` explicitly into the PLIF reconstruction row solver, fixing the undefined local variable in `rtrace`.
+- Keep the thesis configuration at `kappa0 = 0`; the existing regression fixture also checks nonzero background extinction without treating it as fluorescence.
+- Update the PLIF methods cross-reference to Section 2.5.3.
+
 ## thesis-code-2026-10-27.6
 
 DOI: https://doi.org/10.5281/zenodo.23701600
