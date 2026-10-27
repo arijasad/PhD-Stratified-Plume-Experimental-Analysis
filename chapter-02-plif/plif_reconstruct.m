@@ -198,7 +198,8 @@ for isrc=1:nsrc
     tnpi2(isrc)=npi;
 end
 for i = 1:m.nx
-    for it = 1:20
+    % At most 20 Newton updates; evaluate the final iterate before returning.
+    for it = 0:20
         rtmp1 = rtmp;
         rtmp2 = rtmp;
         ttmp1 = ttmp;
@@ -208,6 +209,7 @@ for i = 1:m.nx
         end
         im1(:) = 0;
         dim1(:) = 0;
+        rowCovered = false(1, m.ny);
         for isrc = 1:nsrc
             npi = numel(rtmp1{isrc}.r);
             for jp = 1:npi
@@ -235,19 +237,17 @@ for i = 1:m.nx
                 for j = j0:j1
                     icell = (i-1)*m.ny + j;
                     fds = fracs(j) .* ds;
+                    % Illumination does not disappear when concentration is zero.
+                    rowCovered(j) = rowCovered(j) || (fds > 0 && r0.inten > 0);
                     fracs(j) = rig.sigma(dens(icell)) * fds;
                     dfrac(j) = rig.dsigma() * fds;
                     dtau = dtau + fracs(j);
                 end
-                if dtau > 0.0
-                    i1 = r0.inten * exp(-dtau);
-                    loss = (r0.inten - i1) * rdv/ dtau;
-                    dloss = (rdv * i1- loss)/dtau;
-                    r0.inten = i1;
-                    for j = j0:j1
-                        im1(j) = im1(j) + loss * fracs(j);
-                        dim1(j) = dim1(j) + (loss+fracs(j) * dloss)*dfrac(j);
-                    end
+                [loss, dloss] = lightTubeLoss(r0.inten, dtau, rdv);
+                r0.inten = r0.inten * exp(-dtau);
+                for j = j0:j1
+                    im1(j) = im1(j) + loss * fracs(j);
+                    dim1(j) = dim1(j) + (loss+fracs(j) * dloss)*dfrac(j);
                 end
                 rtmp2{isrc}.r{jp}.y_l=r0.y_l+r0.dy_l;
                 rtmp2{isrc}.r{jp}.dy_l=r0.dy_l;
@@ -258,27 +258,62 @@ for i = 1:m.nx
                 ray_end(i,jp)=r0.inten;
             end
         end
+        rowCells = (i-1)*m.ny + (1:m.ny);
+        touched(rowCells) = rowCovered;
         relativeError = 0.0;
+        if ~any(rowCovered)
+            relativeError = Inf;
+        end
         for j = 1:m.ny
-            if im1(j) ~= 0.0
+            if rowCovered(j)
                 icell = (i-1)*m.ny + j;
-                touched(icell) = true;
-                scale = image(icell) / im1(j);
-                d = dens(icell) - (im1(j) - image(icell)) / dim1(j);
-                d = max(min(d, rig.dmax), rig.dmin);
-                dens(icell) = d;
-                relerr = abs(scale - 1.0);
+                if isfinite(image(icell)) && isfinite(im1(j)) && im1(j) > 0
+                    relerr = abs(image(icell) / im1(j) - 1.0);
+                elseif im1(j) == 0 && image(icell) == 0
+                    relerr = 0.0;
+                else
+                    % Zero predicted signal cannot explain a positive observation.
+                    relerr = Inf;
+                end
                 relativeError = max(relativeError, relerr);
             end
         end
+        % Accept the field that was actually evaluated, before another update.
         if relativeError < 1e-6
             convergedRows(i) = true;
             break;
+        end
+        if it == 20
+            % Keep the final field and outgoing rays consistent when the limit
+            % is reached; do not return an unevaluated Newton update.
+            break;
+        end
+        for j = 1:m.ny
+            if rowCovered(j) && isfinite(im1(j)) && ...
+                    isfinite(dim1(j)) && dim1(j) > 0
+                icell = (i-1)*m.ny + j;
+                d = dens(icell) - (im1(j) - image(icell)) / dim1(j);
+                dens(icell) = max(min(d, rig.dmax), rig.dmin);
+            end
         end
     end
     rtmp = rtmp2;
     ttmp = ttmp1;
 end
+end
+
+function [loss, dloss] = lightTubeLoss(incomingIntensity, tau, rdv)
+% Stable absorbed-intensity factor and its optical-depth derivative.
+% The zero-depth limits retain the Newton derivative at zero concentration.
+if tau < 1e-4
+    factor = 1 + tau*(-1/2 + tau*(1/6 + tau*(-1/24 + tau/120)));
+    derivative = -1/2 + tau*(1/3 + tau*(-1/8 + tau*(1/30 - tau/144)));
+else
+    factor = -expm1(-tau)/tau;
+    derivative = (exp(-tau)-factor)/tau;
+end
+loss = incomingIntensity*rdv*factor;
+dloss = incomingIntensity*rdv*derivative;
 end
 
 function frac = calcbfracs2a(m, y00,y10,y11,y01,yn0, yx0, yn1, yx1)
@@ -425,16 +460,11 @@ function img=generate_angled_image(m,density,kappa1,kappa0,wf,brays0)
                     opticalDepth(j) = (kappa1*density(ix,j)+kappa0)*fds;
                 end
                 tau = sum(opticalDepth(j0:j1));
-                if tau > 0.0
-                    incomingIntensity = r0.inten;
-                    outgoingIntensity = incomingIntensity*exp(-tau);
-                    absorbedIntensity = incomingIntensity-outgoingIntensity;
-                    loss = absorbedIntensity*rdv/tau;
-                    for j = j0:j1
-                        img(ix,j) = img(ix,j)+loss*opticalDepth(j);
-                    end
-                    r0.inten = outgoingIntensity;
+                loss = lightTubeLoss(r0.inten, tau, rdv);
+                for j = j0:j1
+                    img(ix,j) = img(ix,j)+loss*opticalDepth(j);
                 end
+                r0.inten = r0.inten*exp(-tau);
                 rtmp2{isrc}.r{jp}.y_l=r0.y_l+r0.dy_l;
                 rtmp2{isrc}.r{jp}.dy_l=r0.dy_l;
                 rtmp2{isrc}.r{jp}.y_r=r0.y_r+r0.dy_r;
@@ -476,15 +506,17 @@ function I0=reCalcI0(img_lt,den_array_lt,ds_array,m,kappa1,kappa0)
 % Recover the incident intensity from the known calibration field.
     I0_guess=zeros(size(img_lt));
     atten_products=ones(size(img_lt));
-    attenuation=(exp(-(kappa1.*den_array_lt+kappa0).*ds_array));
+    opticalDepth = (kappa1.*den_array_lt+kappa0).*ds_array;
+    attenuation = exp(-opticalDepth);
+    absorbedFraction = -expm1(-opticalDepth);
     for ix=2:m.nx
         atten_products(ix,:)=atten_products(ix-1,:).*attenuation(ix-1,:);
     end
     for ix=1:m.nx
         if ix>1
-            I0_guess(ix,:)=img_lt(ix,:)./(atten_products(ix,:).*(1-attenuation(ix,:)));
+            I0_guess(ix,:)=img_lt(ix,:)./(atten_products(ix,:).*absorbedFraction(ix,:));
         else
-            I0_guess(ix,:)=img_lt(ix,:)./(1-attenuation(ix,:));
+            I0_guess(ix,:)=img_lt(ix,:)./absorbedFraction(ix,:);
         end
     end
     I0=I0_guess;

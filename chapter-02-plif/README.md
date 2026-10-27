@@ -30,3 +30,16 @@ summary = validate_plif_reconstruction(cfg);
 `test_forward_ray_A` returns one row per image containing the paths to a MAT result, four-panel PNG and standalone reconstructed-field PNG. The standalone PNGs are saved in `outputFolder/reconstructed_fields` and can be read by `densityheight.m`. Use the MAT file for full numerical precision.
 
 `validate_plif_reconstruction` saves per-image MAT files and three-panel PNGs, plus `PLIF_validation_summary.csv` with residuals and correlation for the full image and the selected signal region. This compares reconstruction and projection under the same optical model; it does not independently calibrate density.
+
+## Convergence checks
+
+The solver checks illuminated pixels even when predicted fluorescence is zero and retains a finite derivative at zero optical depth. It keeps the concentration bounds, relative tolerance and 20-update limit; the validity mask excludes uncovered or unconverged pixels.
+
+Run the synthetic checks with MATLAB and Image Processing Toolbox:
+
+```matlab
+addpath('chapter-02-plif');
+test_plif_convergence;
+```
+
+These synthetic Beer–Lambert checks require no experimental data.
