@@ -1,3 +1,10 @@
+## thesis-code-2026-10-27.5
+
+Date: 2026-10-27  
+DOI: https://doi.org/10.5281/zenodo.23693977
+
+- The standalone reconstructed-field PNG is now a masked preview, with a separate validity-mask PNG. Per-image MAT files expose `maskedReconstructedField`, `validMask` and `coverageMask` for quantitative analysis; the unmasked solver field remains available for forward projection.
+
 ## thesis-code-2026-10-27.4
 
 Date: 2026-10-27  
