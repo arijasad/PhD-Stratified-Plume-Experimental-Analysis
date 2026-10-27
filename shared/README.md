@@ -10,6 +10,8 @@ This workflow follows the completed thesis, Section 2.5.4, equations (2.19)-(2.2
 
 `G_n(z,t) = (I_c(z,t) - min_z I_c(z,t)) / (max_z I_c(z,t) - min_z I_c(z,t))`.
 
+The thesis height-map backgrounds and detected height boundaries use this per-time normalised greyscale field, `G_n`. It is an image-intensity measure, not the calibrated source-fluid fraction `chi` or a sequence-wide normalisation.
+
 A constant corrected profile has no boundary. It is stored as zero with `hasContrast = false`; only floating-point subtraction roundoff is treated as zero contrast. The crop and selected columns must remain fixed throughout the sequence. By default all retained columns are used.
 
 ```matlab
