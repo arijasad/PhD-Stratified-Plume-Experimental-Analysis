@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 type: software
-message: Cite the current software version using its Zenodo DOI when the release is published.
+message: Please cite this archived software version using its Zenodo DOI.
 title: 'Stratified plume experimental analysis: Thesis code'
 authors:
 - family-names: Asad
@@ -9,7 +9,7 @@ authors:
   orcid: https://orcid.org/0009-0008-2063-4154
 version: thesis-code-2026-10-28
 date-released: '2026-10-28'
-doi: 10.5281/zenodo.23545911
+doi: 10.5281/zenodo.23716990
 repository-code: https://github.com/arijasad/PhD-Stratified-Plume-Experimental-Analysis
 abstract: 'MATLAB software for analysing stratified-plume experiments from Arij Asad''s PhD research,
   Mixing behaviour of plumes, at the University of Bristol. It provides greyscale stratification-depth
