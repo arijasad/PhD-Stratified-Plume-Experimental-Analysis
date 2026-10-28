@@ -18,7 +18,7 @@ Source images, empirical calibrations and completed run configurations are not i
 
 The boundary detection follows the greyscale method in thesis Section 2.5.4 and Table 2.4: first-frame background subtraction, normalisation within each frame, then the first row above a fixed dimensionless threshold when scanning upwards. The thesis height-time figure backgrounds use dye signal normalised by its maximum over the complete experimental record. `normalise_dye_record.m` applies that display scaling; it is separate from the per-frame boundary calculation. Depth is measured below the ceiling. See [the shared-function guide](shared/README.md) for the complete workflow and sensitivity bounds.
 
-This is the master version of the software accompanying the thesis.
+This is the master version of the software accompanying the thesis. The PLIF validator reports forward-consistency residuals over all finite pixels in the configured crop; reconstruction masks remain available for field analysis.
 
 ## Density-reconstruction method
 
@@ -28,6 +28,6 @@ This citation applies to density reconstruction. The greyscale boundary measurem
 
 ## Citation and licence
 
-Cite *Stratified plume experimental analysis: Thesis code*, version `thesis-code-2026-10-27.10`, using its version-specific Zenodo DOI. The all-versions DOI is [10.5281/zenodo.23545911](https://doi.org/10.5281/zenodo.23545911). Citation metadata are provided in [CITATION.cff](CITATION.cff).
+Cite *Stratified plume experimental analysis: Thesis code*, version `thesis-code-2026-10-28`, using its version-specific Zenodo DOI. The all-versions DOI is [10.5281/zenodo.23545911](https://doi.org/10.5281/zenodo.23545911). Citation metadata are provided in [CITATION.cff](CITATION.cff).
 
 The source code is available under the [MIT licence](LICENSE). Supporting documentation is provided in the folder READMEs under CC BY 4.0.
