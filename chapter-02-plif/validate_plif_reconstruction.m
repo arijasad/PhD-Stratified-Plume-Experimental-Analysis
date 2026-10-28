@@ -2,8 +2,8 @@ function summaryTable = validate_plif_reconstruction(cfg)
 % Compare measured fluorescence with the forward image of the reconstructed field.
 % Both calculations use the same calibration-derived incident intensities.
 % This checks forward consistency; it does not calibrate absolute density.
-% The full configured crop is included, including the nozzle region. Pixels
-% without reconstruction coverage or row convergence are excluded.
+% Residuals include every finite measured/forward pixel in the configured crop.
+% Coverage and convergence masks remain available for quantitative field use.
 if nargin < 1
     error('PLIF:Settings', 'Supply a configuration created with plif_settings().');
 end
@@ -36,7 +36,9 @@ for k = 1:nFiles
     if ~isequal(size(result.validMask),size(img))
         error('PLIF:ValidityMaskSize', 'Reconstruction validity mask dimensions differ for %s.',imageFiles{k});
     end
-    valid = isfinite(img) & isfinite(img_new) & result.validMask;
+    % Do not condition a forward-consistency diagnostic on solver success.
+    % Retain edge/coverage failures and unconverged rows in the residuals.
+    valid = isfinite(img) & isfinite(img_new);
     if nnz(valid) < 2
         warning('PLIF:ValidPixels', 'Too few valid pixels for %s.',imageFiles{k});
         continue
