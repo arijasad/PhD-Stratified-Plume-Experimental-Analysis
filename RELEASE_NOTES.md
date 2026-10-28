@@ -2,7 +2,7 @@
 
 Date: 2026-10-28
 
-- Calculate PLIF forward-consistency residuals over every finite measured/forward pixel in the configured crop, including uncovered pixels and unconverged rows. Keep coverage and validity masks available for interpreting reconstructed concentration fields.
+- PLIF validation now compares every finite pixel in the measured and synthetic images across the full crop, including uncovered pixels and unconverged rows. The saved masks still show where the reconstructed concentration field is valid.
 
 ## thesis-code-2026-10-27.10
 
