@@ -1,3 +1,9 @@
+## thesis-code-2026-10-28
+
+Date: 2026-10-28
+
+- Calculate PLIF forward-consistency residuals over every finite measured/forward pixel in the configured crop, including uncovered pixels and unconverged rows. Keep coverage and validity masks available for interpreting reconstructed concentration fields.
+
 ## thesis-code-2026-10-27.10
 
 Date: 2026-10-27
