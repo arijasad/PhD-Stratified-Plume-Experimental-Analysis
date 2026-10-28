@@ -29,11 +29,11 @@ summary = validate_plif_reconstruction(cfg);
 
 `test_forward_ray_A` returns one row per image containing the paths to the MAT result, four-panel PNG, masked field-preview PNG and validity-mask PNG. The field preview is for visual inspection. For quantitative use, load `maskedReconstructedField` and `validMask` from the MAT file; `result.reconstructedField` retains the unmasked solver field for forward projection. The mask PNG is named `<image>_valid_mask.png` in `outputFolder/reconstructed_fields`.
 
-`validate_plif_reconstruction` saves per-image MAT files with `maskedReconstructedField`, `validMask` and `coverageMask`, three-panel PNGs, and `PLIF_validation_summary.csv` with residuals and correlation for the full configured crop and selected signal region. The full crop intentionally includes the nozzle region; statistics use covered, converged pixels. This compares reconstruction and projection under the same optical model; it does not independently calibrate density.
+`validate_plif_reconstruction` saves per-image MAT files with `maskedReconstructedField`, `validMask` and `coverageMask`, three-panel PNGs, and `PLIF_validation_summary.csv` with residuals and correlation for every finite measured/forward pixel in the full configured crop and selected signal region. This includes uncovered pixels and unconverged rows in the forward-consistency diagnostic. The MAT files retain the coverage and validity masks for interpreting reconstructed fields. This compares reconstruction and projection under the same optical model; it does not independently calibrate density.
 
 ## Convergence checks
 
-The solver checks illuminated pixels even when predicted fluorescence is zero and retains a finite derivative at zero optical depth. It keeps the concentration bounds, relative tolerance and 20-update limit; the validity mask excludes uncovered or unconverged pixels.
+The solver checks illuminated pixels even when predicted fluorescence is zero and retains a finite derivative at zero optical depth. It keeps the concentration bounds, relative tolerance and 20-update limit. The validity mask identifies covered pixels in converged rows for quantitative analysis of the reconstructed concentration field; validation residuals are calculated separately over all finite pixels in the configured crop.
 
 Run the synthetic checks with MATLAB and Image Processing Toolbox:
 
